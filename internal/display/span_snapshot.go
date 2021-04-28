@@ -28,12 +28,6 @@ type SpanSnapshot struct {
 	InstrumentationLibrary   InstrumentationLibrary
 }
 
-/*
-func ParseTime(s string) (time.Time, error) {
-	return time.Parse(time.RFC3339, s)
-}
-*/
-
 type SpanContext struct {
 	TraceID    string
 	SpanID     string

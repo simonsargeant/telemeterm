@@ -7,7 +7,6 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -32,56 +31,38 @@ func NewTrace(tree *SnapshotNode) *Trace {
 
 func (t *Trace) Draw(screen tcell.Screen) {
 	t.Box.DrawForSubclass(screen, t)
-	// missing var is height
 	x, y, width, _ := t.GetInnerRect()
 
-	index := 0
 	for _, trace := range t.root.Children {
 		duration := trace.SpanSnapshot.EndTime.Sub(trace.SpanSnapshot.StartTime)
-		blocks := strings.Repeat(fullBlock, width-2)
-
 		unit := int(duration) / width
 
-		line := fmt.Sprintf(` %s - %dus`, trace.SpanSnapshot.Name, duration.Microseconds())
-		tview.Print(screen, line, x, y+index, width, tview.AlignLeft, tcell.ColorWhite)
-		line = fmt.Sprintf(`%s%s%s`, leftArrow, blocks, rightArrow)
-		tview.Print(screen, line, x, y+index+1, width, tview.AlignLeft, tcell.ColorBlue)
+		y = t.drawTrace(screen, trace, x, y, width, unit, trace.SpanSnapshot.StartTime)
 
-		index += 2
-		for _, child := range trace.Children {
-			var err error
-			index, err = t.drawChild(screen, child, x, y, width, index, unit, trace.SpanSnapshot.StartTime)
-			if err != nil {
-				log.Error().Err(err).Msg("Draw child nodes")
-			}
-		}
-
-		index += 1
+		y += 1
 	}
 }
 
-func (t *Trace) drawChild(screen tcell.Screen, node *SnapshotNode, x, y, width, index, unit int, parentStart time.Time) (int, error) {
-	startLag := node.SpanSnapshot.StartTime.Sub(parentStart)
+func (t *Trace) drawTrace(screen tcell.Screen, node *SnapshotNode, x, y, width, unit int, rootStart time.Time) int {
+	startLag := node.SpanSnapshot.StartTime.Sub(rootStart)
 	duration := node.SpanSnapshot.EndTime.Sub(node.SpanSnapshot.StartTime)
 
 	startGap := strings.Repeat(" ", int(startLag)/unit)
-	blocks := strings.Repeat(fullBlock, int(duration)/unit)
+	blocks := strings.Repeat(fullBlock, (int(duration)/unit)-2)
 
 	line := fmt.Sprintf(` %s%s - %dus`, startGap, node.SpanSnapshot.Name, duration.Microseconds())
-	tview.Print(screen, line, x, y+index, width, tview.AlignLeft, tcell.ColorWhite)
-	line = fmt.Sprintf(`%s%s%s%s`, startGap, leftArrow, blocks, rightArrow)
-	tview.Print(screen, line, x, y+index+1, width, tview.AlignLeft, tcell.ColorBlue)
+	tview.Print(screen, line, x, y, width, tview.AlignLeft, tcell.ColorWhite)
 
-	index += 2
+	line = fmt.Sprintf(`%s%s%s%s`, startGap, leftArrow, blocks, rightArrow)
+	tview.Print(screen, line, x, y+1, width, tview.AlignLeft, tcell.ColorBlue)
+
+	y += 2
+
 	for _, child := range node.Children {
-		var err error
-		index, err = t.drawChild(screen, child, x, y, width, index, unit, parentStart)
-		if err != nil {
-			log.Error().Err(err).Msg("Draw child nodes")
-		}
+		y = t.drawTrace(screen, child, x, y, width, unit, rootStart)
 	}
 
-	return index, nil
+	return y
 }
 
 // TODO input handling doesn't really do anything yet
