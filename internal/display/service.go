@@ -25,20 +25,10 @@ func ToTree(spans []*SpanSnapshot) *SnapshotNode {
 	spanMap := make(map[string]*SnapshotNode)
 
 	for _, span := range spans {
-		node, ok := spanMap[span.SpanContext.SpanID]
-		if !ok {
-			spanMap[span.SpanContext.SpanID] = &SnapshotNode{}
-			node = spanMap[span.SpanContext.SpanID]
-		}
-
+		node := getOrCreate(spanMap, span.SpanContext.SpanID)
 		node.SpanSnapshot = span
 
-		parent, ok := spanMap[span.Parent.SpanID]
-		if !ok {
-			spanMap[span.Parent.SpanID] = &SnapshotNode{}
-			parent = spanMap[span.Parent.SpanID]
-		}
-
+		parent := getOrCreate(spanMap, span.Parent.SpanID)
 		parent.Children = append(parent.Children, node)
 
 		sort.Sort(parent.Children)
@@ -53,4 +43,14 @@ func ToTree(spans []*SpanSnapshot) *SnapshotNode {
 
 	log.Error().Msg("No root node found")
 	return nil
+}
+
+func getOrCreate(spanMap map[string]*SnapshotNode, spanID string) *SnapshotNode {
+	node, ok := spanMap[spanID]
+	if !ok {
+		spanMap[spanID] = &SnapshotNode{}
+		node = spanMap[spanID]
+	}
+
+	return node
 }
