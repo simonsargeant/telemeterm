@@ -37,19 +37,7 @@ func (t *Trace) Draw(screen tcell.Screen) {
 
 	index := 0
 	for _, trace := range t.root.Children {
-		start, err := time.Parse(time.RFC3339Nano, trace.SpanSnapshot.StartTime)
-		if err != nil {
-			log.Error().Err(err).Msg("Invalid start timestamp")
-			continue
-		}
-
-		end, err := time.Parse(time.RFC3339Nano, trace.SpanSnapshot.EndTime)
-		if err != nil {
-			log.Error().Err(err).Msg("Invalid end timestamp")
-			continue
-		}
-
-		duration := end.Sub(start)
+		duration := trace.SpanSnapshot.EndTime.Sub(trace.SpanSnapshot.StartTime)
 		blocks := strings.Repeat(fullBlock, width-2)
 
 		unit := int(duration) / width
@@ -61,7 +49,8 @@ func (t *Trace) Draw(screen tcell.Screen) {
 
 		index += 2
 		for _, child := range trace.Children {
-			index, err = t.drawChild(screen, child, x, y, width, index, unit, start)
+			var err error
+			index, err = t.drawChild(screen, child, x, y, width, index, unit, trace.SpanSnapshot.StartTime)
 			if err != nil {
 				log.Error().Err(err).Msg("Draw child nodes")
 			}
@@ -72,18 +61,8 @@ func (t *Trace) Draw(screen tcell.Screen) {
 }
 
 func (t *Trace) drawChild(screen tcell.Screen, node *SnapshotNode, x, y, width, index, unit int, parentStart time.Time) (int, error) {
-	start, err := time.Parse(time.RFC3339Nano, node.SpanSnapshot.StartTime)
-	if err != nil {
-		return index, fmt.Errorf("start timestamp: %w", err)
-	}
-
-	end, err := time.Parse(time.RFC3339Nano, node.SpanSnapshot.EndTime)
-	if err != nil {
-		return index, fmt.Errorf("end timestamp: %w", err)
-	}
-
-	startLag := start.Sub(parentStart)
-	duration := end.Sub(start)
+	startLag := node.SpanSnapshot.StartTime.Sub(parentStart)
+	duration := node.SpanSnapshot.EndTime.Sub(node.SpanSnapshot.StartTime)
 
 	startGap := strings.Repeat(" ", int(startLag)/unit)
 	blocks := strings.Repeat(fullBlock, int(duration)/unit)
@@ -95,6 +74,7 @@ func (t *Trace) drawChild(screen tcell.Screen, node *SnapshotNode, x, y, width, 
 
 	index += 2
 	for _, child := range node.Children {
+		var err error
 		index, err = t.drawChild(screen, child, x, y, width, index, unit, parentStart)
 		if err != nil {
 			log.Error().Err(err).Msg("Draw child nodes")

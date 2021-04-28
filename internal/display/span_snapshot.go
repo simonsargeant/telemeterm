@@ -13,8 +13,8 @@ type SpanSnapshot struct {
 	Parent                   SpanContext
 	SpanKind                 int
 	Name                     string
-	StartTime                string
-	EndTime                  string
+	StartTime                time.Time
+	EndTime                  time.Time
 	Attributes               []KeyValue
 	MessageEvents            interface{} // ???
 	Links                    interface{} // ???
@@ -28,9 +28,11 @@ type SpanSnapshot struct {
 	InstrumentationLibrary   InstrumentationLibrary
 }
 
+/*
 func ParseTime(s string) (time.Time, error) {
 	return time.Parse(time.RFC3339, s)
 }
+*/
 
 type SpanContext struct {
 	TraceID    string

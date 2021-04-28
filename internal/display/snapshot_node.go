@@ -13,5 +13,5 @@ func (n Nodes) Len() int      { return len(n) }
 func (n Nodes) Swap(i, j int) { n[i], n[j] = n[j], n[i] }
 
 func (n Nodes) Less(i, j int) bool {
-	return n[i].SpanSnapshot.StartTime < n[j].SpanSnapshot.StartTime
+	return n[i].SpanSnapshot.StartTime.Before(n[j].SpanSnapshot.StartTime)
 }
